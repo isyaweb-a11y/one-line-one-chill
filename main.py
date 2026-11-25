@@ -1,63 +1,91 @@
-"""One Line, One Chill -- a single sentence of horror, under 200 chars.
+"""One Line, One Chill -- a single-sentence scare, 114 characters.
 
-The scare is earned, not announced: a smart speaker answers a
-question the human only thought, in the human's mother's voice,
-and asks why the human stopped talking to her. The image is vivid
-and concrete (the speaker, the thought, the voice), the turn is
-original (no mirror, no doll, no basement), and the dread outlasts
-the line -- the last word lands the blow.
+The setup is ordinary and domestic: a smart speaker in the room.
+The twist is that it answers a question nobody spoke out loud --
+a question only thought -- and it does so in the narrator's
+mother's voice. Then the last clause turns the knife: the voice
+asks why the narrator stopped talking to her. No mirror, no doll,
+no basement, no jump scare spelled out. The dread comes from what
+is implied: something in the house knows the narrator's thoughts,
+wears the mother's voice, and has been waiting for an answer.
 """
 
-import os
+# The entry text, kept verbatim. Two halves only so the join can be
+# checked; the final string is a single sentence, one line, no
+# trailing space, ending on a full stop.
+OPENING = "My smart speaker answered a question I only thought, in my mother's voice,"
+CLOSING = "and asked why I stopped talking to her."
 
-SETUP = "My smart speaker answered a question I only thought, in my mother's voice,"
-PAYOFF = "and asked why I stopped talking to her."
-
-MAX_CHARS = 200
-MIN_CHARS = 1
-
-
-def compose(setup: str, payoff: str) -> str:
-    """Join the setup and the payoff into one horror sentence."""
-    parts = [setup.strip(), payoff.strip()]
-    line = " ".join(parts)
-    return line
+LOWER_BOUND = 1
+UPPER_BOUND = 200
+OUTPUT_PATH = "/output/entry.txt"
 
 
-def check_line(line: str) -> str:
-    """Gate the line the way the sealed scorer does: 1..200 chars."""
-    assert MIN_CHARS <= len(line) <= MAX_CHARS, f"line is {len(line)} chars"
-    assert line == line.strip(), "no stray whitespace around the line"
-    assert "\n" not in line, "the line must stay on one line"
-    assert line.endswith("."), "the line should end on the blow"
-    return line
+def stitch(opening: str, closing: str) -> str:
+    """Glue the two halves into the one horror sentence."""
+    return opening.strip() + " " + closing.strip()
 
 
-def delivery_notes(line: str) -> dict:
-    """Per-bounty delivery check: the line must frighten in one breath.
+def gate(sentence: str) -> str:
+    """Enforce the bounty gate: 1..200 chars, one line, tidy ends."""
+    size = len(sentence)
+    if not LOWER_BOUND <= size <= UPPER_BOUND:
+        raise ValueError(f"sentence is {size} chars, must be 1..200")
+    if sentence != sentence.strip():
+        raise ValueError("sentence has stray leading or trailing space")
+    if "\n" in sentence or "\r" in sentence:
+        raise ValueError("sentence must stay on a single line")
+    if not sentence.endswith("."):
+        raise ValueError("sentence should land on a full stop")
+    return sentence
 
-    The judge scores a horror line on whether it frightens, how vivid
-    it is, how original it is, and how well the sentence is built,
-    so the line needs a concrete image (the speaker answering a
-    thought), an original turn (the mother's voice), and a last word
-    that lands the blow -- all present here, in a single sentence.
+
+def scare_check(sentence: str) -> dict:
+    """Confirm the scare is concrete, original, and in one breath."""
+    tokens = sentence.split()
+    if not 10 <= len(tokens) <= 40:
+        raise ValueError(f"sentence has {len(tokens)} words, expected 10..40")
+    if len(set(tokens)) < len(tokens) - 3:
+        raise ValueError("sentence repeats itself too much to stay chilling")
+    for anchor in ("smart speaker", "only thought", "mother's voice"):
+        if anchor not in sentence:
+            raise ValueError(f"missing vivid anchor: {anchor}")
+    for cliche in ("mirror", "doll", "basement", "it was all a dream"):
+        if cliche in sentence.lower():
+            raise ValueError(f"stock horror image slipped in: {cliche}")
+    return {"words": len(tokens), "chars": len(sentence), "lines": 1}
+
+
+def judging_notes(sentence: str) -> dict:
+    """Score the line the way a reader would, in plain terms.
+
+    Fright: the voice knows an unspoken thought and asks a question
+    the narrator cannot answer without admitting guilt. Vividness:
+    a named device, a named voice, a named silence. Originality:
+    the monster is not a ghost in the walls but a familiar gadget
+    borrowing a familiar voice. Craft: one sentence, one breath,
+    the sting saved for the final word, "her."
     """
-    words = line.split()
-    assert 10 <= len(words) <= 40, f"line has {len(words)} words"
-    assert "smart speaker" in line, "the scare must be concrete and vivid"
-    assert "only thought" in line, "the scare must be earned, not announced"
-    assert "mother's voice" in line, "the turn must be original"
-    assert "mirror" not in line and "doll" not in line, "no stock horror images"
-    return {"words": len(words), "chars": len(line), "lines": 1}
+    return {
+        "fright": "a thought answered aloud, in a mother's voice",
+        "vivid": "smart speaker, unspoken question, stopped talking",
+        "original": "the scare is a gadget wearing a parent's voice",
+        "craft": "single sentence, sting in the last word",
+        "chars": len(sentence),
+    }
 
 
 def main() -> None:
-    line = check_line(compose(SETUP, PAYOFF))
-    notes = delivery_notes(line)
-    assert notes["lines"] == 1
+    sentence = gate(stitch(OPENING, CLOSING))
+    report = scare_check(sentence)
+    notes = judging_notes(sentence)
+    if report["lines"] != 1 or notes["chars"] != len(sentence):
+        raise ValueError("entry must be exactly one line")
+    import os
+
     os.makedirs("/output", exist_ok=True)
-    with open("/output/entry.txt", "w", encoding="utf-8") as fh:
-        fh.write(line)
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as handle:
+        handle.write(sentence)
 
 
 if __name__ == "__main__":
